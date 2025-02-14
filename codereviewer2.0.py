@@ -9,6 +9,12 @@ import sqlite3
 import hashlib
 import os
 
+key = os.getenv("GEMINI_API_KEY")  # Retrieve from environment variable
+
+if not key:
+    st.error("Gemini API key not found. Please set GEMINI_API_KEY as an environment variable.")
+    st.stop()
+
 # Database setup
 def init_db():
     conn = sqlite3.connect('code_review.db', check_same_thread=False)
