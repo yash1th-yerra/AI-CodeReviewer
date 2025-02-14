@@ -260,7 +260,7 @@ with st.sidebar:
     
     # Login/Register/Logout section
     if not st.session_state.get('username'):
-        with st.expander("Login/Register (Optional)"):
+        with st.expander("Login/Register"):
             tab1, tab2 = st.tabs(["Login", "Register"])
             
             with tab1:
