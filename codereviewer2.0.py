@@ -217,12 +217,12 @@ init_db()
 init_session_state()
 
 # Load Gemini API key and configure model
-try:
-    with open(".gemini.txt", "r") as file:
-        key = file.read().strip()
-except FileNotFoundError:
-    st.error("Gemini API key not found. Please create .gemini.txt file with your API key.")
-    st.stop()
+# try:
+#     with open(".gemini.txt", "r") as file:
+#         key = file.read().strip()
+# except FileNotFoundError:
+#     st.error("Gemini API key not found. Please create .gemini.txt file with your API key.")
+#     st.stop()
 
 # System prompt for Gemini
 system_prompt = """You are a code reviewer specializing in Python. Your task is to:
