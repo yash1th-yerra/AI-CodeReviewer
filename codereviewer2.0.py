@@ -8,6 +8,9 @@ from datetime import datetime
 import sqlite3
 import hashlib
 import os
+from PIL import Image
+import pytesseract
+import io
 
 key = os.getenv("GEMINI_API_KEY")  # Retrieve from environment variable
 
@@ -94,6 +97,25 @@ def save_review(username, tab_id, tab_data):
                tab_data["fixed_code"], tab_data["timestamp"]))
     conn.commit()
     conn.close()
+
+# Function to extract code using Gemini AI
+def extract_code_from_image_with_genai(uploaded_image):
+    try:
+        # Read the image file as bytes
+        image = Image.open(io.BytesIO(uploaded_image.getvalue()))
+
+        # Send image to Gemini AI for processing
+        response = model2.generate_content(["Extract only the programming code from this image.Do NOT include explanations, comments, or extra text. Just return the raw python code: ", image])
+
+        extracted_code = response.text.strip() if response.text else ""
+
+        return extracted_code
+
+    except Exception as e:
+        st.error(f"Error extracting code from image using AI: {str(e)}")
+        return ""
+
+
 
 def run_code(code, tab_id):
     """Execute Python code and capture output."""
@@ -251,8 +273,29 @@ system_prompt = """You are a code reviewer specializing in Python. Your task is 
 - Always wrap the corrected Python code in triple backticks with 'python' language identifier.
 """
 
+
+system_prompt2 = """📌 Role: You are an advanced AI model specialized in extracting raw programming code from images.
+
+🎯 Task:
+
+    Extract only the programming code from the given image.
+    Do NOT include explanations, comments, or any extra text.
+    Do NOT format the output as markdown, JSON, or any other structured format—just return the plain code.
+    Preserve indentation, special characters, and syntax exactly as seen in the image.
+
+⚠️ Restrictions:
+
+    Do not add headers, footers, or descriptions.
+    Do not modify, interpret, or translate the code.
+    If the image contains multiple code snippets, extract them in the same order as they appear.
+
+✅ Expected Output:
+
+    The raw programming code extracted as plain text, exactly as shown in the image."""
 genai.configure(api_key=key)
 model = genai.GenerativeModel("gemini-2.0-flash-exp", system_instruction=system_prompt)
+model2 = genai.GenerativeModel("gemini-2.0-flash-exp", system_instruction=system_prompt2)
+
 
 # Sidebar
 with st.sidebar:
@@ -313,18 +356,7 @@ with st.sidebar:
             if st.button("🗑️", key=f"delete_{tab_id}"):
                 delete_tab(tab_id)
                 st.rerun()
-
-    # File upload section
-    st.divider()
-    uploaded_file = st.file_uploader("Upload a Python file", type=["py"])
-    if uploaded_file is not None:
-        # Read the content of the uploaded file
-        code = uploaded_file.read().decode("utf-8")
-        # Set the code in the current tab
-        st.session_state["tabs"][st.session_state["current_tab"]]["code"] = code
-        st.session_state["tabs"][st.session_state["current_tab"]]["editor_key"] += 1
-        if st.session_state.get('username'):
-            save_review(st.session_state['username'], st.session_state["current_tab"], st.session_state["tabs"][st.session_state["current_tab"]])
+    
 
 # Main content area
 if "tabs" in st.session_state and st.session_state["tabs"]:
@@ -353,6 +385,60 @@ code = st_ace(
     value=current_tab_data["code"],
     key=f"editor_{current_tab}_{current_tab_data['editor_key']}"
 )
+
+    # File upload section
+st.divider()
+uploaded_file = st.file_uploader("Upload a Python file", type=["py"])
+if uploaded_file is not None:
+    # Read the content of the uploaded file
+    code = uploaded_file.read().decode("utf-8")
+    # Set the code in the current tab
+    st.session_state["tabs"][st.session_state["current_tab"]]["code"] = code
+    st.session_state["tabs"][st.session_state["current_tab"]]["editor_key"] += 1
+    if st.session_state.get('username'):
+        save_review(st.session_state['username'], st.session_state["current_tab"], st.session_state["tabs"][st.session_state["current_tab"]])
+
+
+st.divider()
+
+# Store last processed image hash to avoid infinite loops
+if "last_processed_image_hash" not in st.session_state:
+    st.session_state["last_processed_image_hash"] = None
+
+uploaded_image = st.file_uploader("Upload an image containing code", type=["png", "jpg", "jpeg"])
+
+if uploaded_image:
+    # Compute hash of the uploaded image
+    image_bytes = uploaded_image.getvalue()
+    image_hash = hashlib.md5(image_bytes).hexdigest()
+
+    # Check if this image was already processed
+    if image_hash != st.session_state["last_processed_image_hash"]:
+        extracted_code = extract_code_from_image_with_genai(uploaded_image)
+
+        if extracted_code:
+            # Update editor only if new code was extracted
+            st.session_state["tabs"][st.session_state["current_tab"]]["code"] = extracted_code
+            st.session_state["tabs"][st.session_state["current_tab"]]["editor_key"] += 1
+
+            # Save review if user is logged in
+            if st.session_state.get('username'):
+                save_review(
+                    st.session_state['username'],
+                    st.session_state["current_tab"],
+                    st.session_state["tabs"][st.session_state["current_tab"]]
+                )
+
+            # Update session to avoid re-processing the same image
+            st.session_state["last_processed_image_hash"] = image_hash
+
+            st.success("Code extracted using AI and updated in the editor!")
+            st.rerun()  # Refresh UI
+        else:
+            st.warning("No code detected in the uploaded image.")
+    else:
+        st.info("This image has already been processed.")
+
 
 # Update code in session state and database
 st.session_state["tabs"][current_tab]["code"] = code
