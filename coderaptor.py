@@ -375,7 +375,7 @@ else:
     current_tab = st.session_state["current_tab"]
     current_tab_data = st.session_state["tabs"][current_tab]
 
-st.title("Python Code Reviewer")
+st.title("Code Raptor")
 
 # Code Editor
 code = st_ace(
