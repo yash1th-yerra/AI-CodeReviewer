@@ -318,7 +318,7 @@ def show_about():
         ---
         **Contact & Support:**  
         📧 Email: yeswanthyerra07@gmail.com  
-        🌐 Website: [coderaptor.com](https://coderaptor.com)
+        🌐 Website: [coderaptor.app/](https://coderaptor.streamlit.app/)
         """
     )
 
