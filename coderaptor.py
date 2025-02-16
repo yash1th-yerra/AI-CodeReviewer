@@ -333,7 +333,7 @@ with st.sidebar:
         st.session_state.show_about = not st.session_state.show_about
 
     # Main UI
-    st.title("My Streamlit App")
+    st.title("**Code Raptor**")
     
     st.button("About", on_click=toggle_about)  # Toggles the About section
     
