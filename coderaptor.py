@@ -284,21 +284,67 @@ system_prompt2 = """📌 Role: You are an advanced AI model specialized in extra
     Preserve indentation, special characters, and syntax exactly as seen in the image.
 
 ⚠️ Restrictions:
-
+    
     Do not add headers, footers, or descriptions.
     Do not modify, interpret, or translate the code.
     If the image contains multiple code snippets, extract them in the same order as they appear.
 
 ✅ Expected Output:
-
+    
     The raw programming code extracted as plain text, exactly as shown in the image."""
 genai.configure(api_key=key)
 model = genai.GenerativeModel("gemini-2.0-flash-exp", system_instruction=system_prompt)
 model2 = genai.GenerativeModel("gemini-2.0-flash-exp", system_instruction=system_prompt2)
 
 
+def show_about():
+    st.title("About CodeRaptor")
+    st.markdown(
+        """
+        **CodeRaptor** is an advanced AI-powered platform designed for effortless code extraction, 
+        execution, and review. Whether you're a developer debugging scripts, an educator analyzing 
+        student code, or a researcher working with complex algorithms, CodeRaptor streamlines the process 
+        with cutting-edge AI models.
+
+        ### Key Features:
+        - **AI-Powered Code Extraction**: Extracts code from images with high accuracy.
+        - **Instant Code Execution**: Run extracted or uploaded code directly within the app.
+        - **Automated Code Review**: Get AI-generated feedback on code quality, efficiency, and security.
+        - **User-Friendly Interface**: Simplified workflow with secure authentication.
+
+        Built with **Streamlit**, **Python**, and **AI-driven analysis**, CodeRaptor is here to transform 
+        how you interact with code.
+
+        ---
+        **Contact & Support:**  
+        📧 Email: yeswanthyerra07@gmail.com  
+        🌐 Website: [coderaptor.com](https://coderaptor.com)
+        """
+    )
+
 # Sidebar
 with st.sidebar:
+        # Ensure 'show_about' is in session state
+    if "show_about" not in st.session_state:
+        st.session_state.show_about = False
+
+    # Toggle function
+    def toggle_about():
+        st.session_state.show_about = not st.session_state.show_about
+
+    # Main UI
+    st.title("My Streamlit App")
+    
+    st.button("About", on_click=toggle_about)  # Toggles the About section
+    
+    # Conditionally display the About section
+    if st.session_state.show_about:
+        show_about()
+        st.button("Close", on_click=toggle_about)  # Button to hide the About section
+    else:
+        st.write("Welcome to the main page!")
+    
+    st.divider()
     st.title("Code Review History")
     
     # Login/Register/Logout section
@@ -478,3 +524,5 @@ with chat_container:
             if st.button("Apply Fixed Code", key=f"apply_{current_tab}"):
                 apply_fixed_code(current_tab)
                 st.rerun()
+
+
