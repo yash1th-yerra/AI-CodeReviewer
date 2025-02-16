@@ -9,7 +9,7 @@ import sqlite3
 import hashlib
 import os
 from PIL import Image
-import pytesseract
+# import pytesseract
 import io
 
 key = os.getenv("GEMINI_API_KEY")  # Retrieve from environment variable
