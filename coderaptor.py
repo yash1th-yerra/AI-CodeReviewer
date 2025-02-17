@@ -12,11 +12,11 @@ from PIL import Image
 # import pytesseract
 import io
 
-# key = os.getenv("GEMINI_API_KEY")  # Retrieve from environment variable
+key = os.getenv("GEMINI_API_KEY")  # Retrieve from environment variable
 
-# if not key:
-#     st.error("Gemini API key not found. Please set GEMINI_API_KEY as an environment variable.")
-#     st.stop()
+if not key:
+    st.error("Gemini API key not found. Please set GEMINI_API_KEY as an environment variable.")
+    st.stop()
 
 # Database setup
 def init_db():
@@ -292,7 +292,7 @@ system_prompt2 = """📌 Role: You are an advanced AI model specialized in extra
 ✅ Expected Output:
     
     The raw programming code extracted as plain text, exactly as shown in the image."""
-genai.configure(api_key="AIzaSyCH2fLbpZs3XBZmBvjNzssfv9q_M-UN75s")
+genai.configure(api_key=key)
 model = genai.GenerativeModel("gemini-2.0-flash-exp", system_instruction=system_prompt)
 model2 = genai.GenerativeModel("gemini-2.0-flash-exp", system_instruction=system_prompt2)
 
