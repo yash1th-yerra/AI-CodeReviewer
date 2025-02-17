@@ -12,11 +12,11 @@ from PIL import Image
 # import pytesseract
 import io
 
-key = os.getenv("GEMINI_API_KEY")  # Retrieve from environment variable
+# key = os.getenv("GEMINI_API_KEY")  # Retrieve from environment variable
 
-if not key:
-    st.error("Gemini API key not found. Please set GEMINI_API_KEY as an environment variable.")
-    st.stop()
+# if not key:
+#     st.error("Gemini API key not found. Please set GEMINI_API_KEY as an environment variable.")
+#     st.stop()
 
 # Database setup
 def init_db():
@@ -292,7 +292,7 @@ system_prompt2 = """📌 Role: You are an advanced AI model specialized in extra
 ✅ Expected Output:
     
     The raw programming code extracted as plain text, exactly as shown in the image."""
-genai.configure(api_key=key)
+genai.configure(api_key="AIzaSyCH2fLbpZs3XBZmBvjNzssfv9q_M-UN75s")
 model = genai.GenerativeModel("gemini-2.0-flash-exp", system_instruction=system_prompt)
 model2 = genai.GenerativeModel("gemini-2.0-flash-exp", system_instruction=system_prompt2)
 
@@ -434,56 +434,72 @@ code = st_ace(
 
     # File upload section
 st.divider()
-uploaded_file = st.file_uploader("Upload a Python file", type=["py"])
+# Unified file uploader for both Python files and images
+
+uploaded_file = st.file_uploader("Upload a file (Python or Image)", type=["py", "png", "jpg", "jpeg"])
+st.caption("Note : for images wait for 1 min while extracting code from images ")
+
+
 if uploaded_file is not None:
-    # Read the content of the uploaded file
-    code = uploaded_file.read().decode("utf-8")
-    # Set the code in the current tab
-    st.session_state["tabs"][st.session_state["current_tab"]]["code"] = code
-    st.session_state["tabs"][st.session_state["current_tab"]]["editor_key"] += 1
-    if st.session_state.get('username'):
-        save_review(st.session_state['username'], st.session_state["current_tab"], st.session_state["tabs"][st.session_state["current_tab"]])
+
+    # Get the file type
+
+    file_type = uploaded_file.type
 
 
-st.divider()
+    if file_type == "text/x-python":  # Python file
+        
+        code = uploaded_file.read().decode("utf-8")
+        
+        # Update the code in the current tab
+        code_hash = hashlib.md5(code.encode()).hexdigest()
 
-# Store last processed image hash to avoid infinite loops
-if "last_processed_image_hash" not in st.session_state:
-    st.session_state["last_processed_image_hash"] = None
+        if code_hash != st.session_state.get("last_processed_code_hash"):
+            if code:
+                st.session_state["tabs"][st.session_state["current_tab"]]["code"] = code
+                st.session_state["tabs"][st.session_state["current_tab"]]["editor_key"] += 1
 
-uploaded_image = st.file_uploader("Upload an image containing code", type=["png", "jpg", "jpeg"])
+                # Save review if the user is logged in
+                if st.session_state.get('username'):
+                    save_review(st.session_state['username'], st.session_state["current_tab"], st.session_state["tabs"][st.session_state["current_tab"]])
+                
+                st.session_state["last_processed_code_hash"] = code_hash
+                st.success("Python file uploaded and code updated in the editor!")
+                st.rerun()  # Refresh UI
+            else:    
+                st.warning("No code detected in the uploaded image.")
 
-if uploaded_image:
-    # Compute hash of the uploaded image
-    image_bytes = uploaded_image.getvalue()
-    image_hash = hashlib.md5(image_bytes).hexdigest()
+    elif file_type in ["image/png", "image/jpeg"]:  # Image file
+        # Compute hash of the uploaded image
+        image_bytes = uploaded_file.getvalue()
+        image_hash = hashlib.md5(image_bytes).hexdigest()
+        # Check if this image was already processed
+        if image_hash != st.session_state.get("last_processed_image_hash"):
+            extracted_code = extract_code_from_image_with_genai(uploaded_file)
+            if extracted_code:
+                # Update editor only if new code was extracted
+                st.session_state["tabs"][st.session_state["current_tab"]]["code"] = extracted_code
+                st.session_state["tabs"][st.session_state["current_tab"]]["editor_key"] += 1
+                # Save review if user is logged in
+                if st.session_state.get('username'):
 
-    # Check if this image was already processed
-    if image_hash != st.session_state["last_processed_image_hash"]:
-        extracted_code = extract_code_from_image_with_genai(uploaded_image)
+                    save_review(
 
-        if extracted_code:
-            # Update editor only if new code was extracted
-            st.session_state["tabs"][st.session_state["current_tab"]]["code"] = extracted_code
-            st.session_state["tabs"][st.session_state["current_tab"]]["editor_key"] += 1
+                        st.session_state['username'],
 
-            # Save review if user is logged in
-            if st.session_state.get('username'):
-                save_review(
-                    st.session_state['username'],
-                    st.session_state["current_tab"],
-                    st.session_state["tabs"][st.session_state["current_tab"]]
-                )
+                        st.session_state["current_tab"],
 
-            # Update session to avoid re-processing the same image
-            st.session_state["last_processed_image_hash"] = image_hash
+                        st.session_state["tabs"][st.session_state["current_tab"]]
 
-            st.success("Code extracted using AI and updated in the editor!")
-            st.rerun()  # Refresh UI
+                    )
+                # Update session to avoid re-processing the same image
+                st.session_state["last_processed_image_hash"] = image_hash
+                st.success("Code extracted using AI and updated in the editor!")               
+                st.rerun()  # Refresh UI            
+            else:
+                st.warning("No code detected in the uploaded image.")
         else:
-            st.warning("No code detected in the uploaded image.")
-    else:
-        st.info("This image has already been processed.")
+            st.info("This image has already been processed.")
 
 
 # Update code in session state and database
