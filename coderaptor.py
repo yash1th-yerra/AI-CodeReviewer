@@ -288,6 +288,7 @@ system_prompt2 = """📌 Role: You are an advanced AI model specialized in extra
     Do not add headers, footers, or descriptions.
     Do not modify, interpret, or translate the code.
     If the image contains multiple code snippets, extract them in the same order as they appear.
+    if it doesn't contain any code just return a polite request to include a photo that contains code.
 
 ✅ Expected Output:
     
