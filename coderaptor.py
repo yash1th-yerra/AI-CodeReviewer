@@ -12,6 +12,18 @@ from PIL import Image
 # import pytesseract
 import io
 
+
+import ast  # To check if extracted code is valid Python
+
+def is_valid_python_code(text):
+    """Check if the extracted text is valid Python code."""
+    try:
+        ast.parse(text)  # Try parsing the text as Python code
+        return True
+    except SyntaxError:
+        return False
+
+
 key = os.getenv("GEMINI_API_KEY")  # Retrieve from environment variable
 
 if not key:
@@ -478,12 +490,18 @@ if uploaded_file is not None:
         if image_hash != st.session_state.get("last_processed_image_hash"):
             extracted_code = extract_code_from_image_with_genai(uploaded_file)
             if extracted_code:
-                # Update editor only if new code was extracted
-                st.session_state["tabs"][st.session_state["current_tab"]]["code"] = extracted_code
-                st.session_state["tabs"][st.session_state["current_tab"]]["editor_key"] += 1
-                # Save review if user is logged in
+                if is_valid_python_code(extracted_code):
+            # Update only if it's actual code
+                    st.session_state["tabs"][st.session_state["current_tab"]]["code"] = extracted_code
+                    st.session_state["tabs"][st.session_state["current_tab"]]["editor_key"] += 1
+                    st.success("Code extracted and updated in the editor!")
+                else:
+                    # Store in review output instead
+                    st.session_state["tabs"][st.session_state["current_tab"]]["review_output"] = extracted_code
+                    st.warning("Extracted text does not seem like code. Stored in review section.")
+                    # Save review if user is logged in
                 if st.session_state.get('username'):
-
+                    
                     save_review(
 
                         st.session_state['username'],
