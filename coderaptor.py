@@ -24,8 +24,7 @@ def is_valid_python_code(text):
         return False
 
 
-key = os.getenv("GEMINI_API_KEY")  # Retrieve from environment variable
-
+key = os.getenv("GEMINI_API_KEY")  
 if not key:
     st.error("Gemini API key not found. Please set GEMINI_API_KEY as an environment variable.")
     st.stop()
@@ -450,7 +449,7 @@ st.divider()
 # Unified file uploader for both Python files and images
 
 uploaded_file = st.file_uploader("Upload a file (Python or Image)", type=["py", "png", "jpg", "jpeg"])
-st.caption("Note : for images wait for 1 min while extracting code from images ")
+st.caption("Note : 1. for images wait for 1 min while extracting code from images \n\n2.To make changes in editor clear uploaded file")
 
 
 if uploaded_file is not None:
